@@ -42,10 +42,12 @@ class CamShiftNode(ROS2OpenCV2):
         cv.CreateTrackbar("Min Value", "Parameters", self.vmin, 255, self.set_vmin)
         cv.CreateTrackbar("Max Value", "Parameters", self.vmax, 255, self.set_vmax)
         cv.CreateTrackbar("Threshold", "Parameters", self.threshold, 255, self.set_threshold)
-        
-        # Initialize a number of variables
-        self.hist = None
-        self.track_window = None
+
+        # Initialize a number of variables Customized to load pre-saved color
+        #self.hist = None
+        self.hist = pickle.load(open("self_hist.p", "rb"))
+        #self.track_window = None
+        self.track_window = pickle.load(open("track_window.p", "rb"))
         self.show_backproj = False
     
     # These are the callbacks for the slider controls
@@ -80,11 +82,13 @@ class CamShiftNode(ROS2OpenCV2):
                 x1 = x0 + w
                 y1 = y0 + h
                 self.track_window = (x0, y0, x1, y1)
+                #pickle.dump( self.track_window, open( "track_window.p", "wb" ) )
                 hsv_roi = hsv[y0:y1, x0:x1]
                 mask_roi = mask[y0:y1, x0:x1]
                 self.hist = cv2.calcHist( [hsv_roi], [0], mask_roi, [16], [0, 180] )
                 cv2.normalize(self.hist, self.hist, 0, 255, cv2.NORM_MINMAX);
                 self.hist = self.hist.reshape(-1)
+                #pickle.dump( self.hist, open( "self_hist.p", "wb" ) )
                 self.show_hist()
     
             if self.detect_box is not None:
