@@ -7,12 +7,14 @@
 """
 
 import rospy
+import pickle
 import cv2
 from cv2 import cv as cv
 from rbx1_vision.ros2opencv2 import ROS2OpenCV2
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
 import numpy as np
+from os.path import expanduser
 
 class CamShiftNode(ROS2OpenCV2):
     def __init__(self, node_name):
@@ -44,10 +46,14 @@ class CamShiftNode(ROS2OpenCV2):
         cv.CreateTrackbar("Threshold", "Parameters", self.threshold, 255, self.set_threshold)
 
         # Initialize a number of variables Customized to load pre-saved color
+        self.home_folder = expanduser("~")
+        self.hist_file = self.home_folder + '/.arlobot/self_hist.p'
+        self.window_file = self.home_folder + '/.arlobot/track_window.p'
+        print self.window_file, self.hist_file
         #self.hist = None
-        self.hist = pickle.load(open("self_hist.p", "rb"))
+        self.hist = pickle.load(open(self.hist_file, "rb"))
         #self.track_window = None
-        self.track_window = pickle.load(open("track_window.p", "rb"))
+        self.track_window = pickle.load(open(self.window_file, "rb"))
         self.show_backproj = False
     
     # These are the callbacks for the slider controls
@@ -82,13 +88,13 @@ class CamShiftNode(ROS2OpenCV2):
                 x1 = x0 + w
                 y1 = y0 + h
                 self.track_window = (x0, y0, x1, y1)
-                #pickle.dump( self.track_window, open( "track_window.p", "wb" ) )
+                #pickle.dump( self.track_window, open( self.window_file, "wb" ) )
                 hsv_roi = hsv[y0:y1, x0:x1]
                 mask_roi = mask[y0:y1, x0:x1]
                 self.hist = cv2.calcHist( [hsv_roi], [0], mask_roi, [16], [0, 180] )
                 cv2.normalize(self.hist, self.hist, 0, 255, cv2.NORM_MINMAX);
                 self.hist = self.hist.reshape(-1)
-                #pickle.dump( self.hist, open( "self_hist.p", "wb" ) )
+                #pickle.dump( self.hist, open( self.hist_file, "wb" ) )
                 self.show_hist()
     
             if self.detect_box is not None:
